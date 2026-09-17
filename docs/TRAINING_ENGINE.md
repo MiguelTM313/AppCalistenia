@@ -8,8 +8,9 @@
 2. calcula cada nível funcional independentemente;
 3. filtra exercícios ativos cujo equipamento obrigatório está disponível e cujo nível mínimo não excede o nível atual mais uma margem de entrada;
 4. ordena candidatos deterministicamente, favorecendo adequação de dificuldade e continuidade recente;
-5. cria séries/faixas e uma justificativa textual;
-6. entrega cada sessão ao `SessionTimeOptimizer`.
+5. avalia o exercício atual, valida equipamento antes de avançar/regredir e aplica deload por volume;
+6. cria séries/faixas e uma justificativa textual com a decisão;
+7. entrega cada sessão ao `SessionTimeOptimizer`.
 
 O otimizador estima aquecimento/finalização, esforço por série, descanso e transições. Para um orçamento curto ele reconstrói a sessão: preserva primeiro os padrões prioritários, remove acessórios e então reduz séries. Readiness baixo reduz volume, nunca aumenta agressivamente a prescrição.
 
@@ -22,11 +23,15 @@ O plano e a execução usam tabelas distintas. Uma conclusão cria `WorkoutSessi
 - **regredir/deload:** repetidamente abaixo do mínimo ou com técnica inadequada;
 - **bloquear:** dor aguda, tontura ou falta de ar inesperada.
 
-Uma única sessão excepcional não promove o exercício e falha muscular não é requisito. Cada decisão contém um motivo legível. A integração completa dessas decisões na geração seguinte está registrada no roadmap; neste incremento o histórico já é persistido e o motor é isoladamente testado.
+Uma única sessão excepcional não promove o exercício e falha muscular não é requisito. Cada decisão contém um motivo legível e alimenta a geração seguinte. Uma progressão incompatível com os equipamentos é rejeitada, mantendo a variação atual.
+
+## Treino rápido
+
+`GenerateQuickWorkoutUseCase` cria uma única `PlannedSession`, prioriza padrões com menor volume recente e usa `SessionTimeOptimizer`. Ela é persistida nas mesmas tabelas e não regenera o plano semanal.
 
 ## Reorganização semanal
 
-`ScheduleRebalancer` mantém sessões passadas/concluídas e reordena apenas as oportunidades futuras, priorizando padrões perdidos. IDs históricos não são apagados. A próxima etapa adicionará persistência versionada de cada replanejamento e uma penalidade explícita para padrões redundantes em dias consecutivos.
+`ScheduleRebalancer` preserva concluídas, marca oportunidades passadas não realizadas como `SKIPPED` e reordena apenas as futuras, priorizando padrões perdidos. IDs históricos não são apagados. A integração visual e versões imutáveis do replanejamento permanecem futuras.
 
 ## Invariantes testados
 

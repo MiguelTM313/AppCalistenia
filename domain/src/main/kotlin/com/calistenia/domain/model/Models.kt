@@ -12,6 +12,7 @@ enum class PrescriptionType { REPETITIONS, TIME, DISTANCE }
 enum class SessionStatus { PLANNED, IN_PROGRESS, COMPLETED, SKIPPED }
 enum class Discomfort { NONE, MILD, PAIN, SHARP_PAIN, DIZZINESS, UNEXPECTED_BREATHLESSNESS, OTHER }
 enum class ProgressionAction { PROGRESS, MAINTAIN, REGRESS, DELOAD, BLOCKED_FOR_SAFETY }
+enum class SetupState { SAFETY_PENDING, PROFILE_PENDING, ASSESSMENT_PENDING, PLAN_PENDING, READY }
 
 data class Availability(val days: Set<DayOfWeek>, val defaultMinutes: Int)
 
@@ -107,6 +108,14 @@ data class SetPerformance(
 data class ExercisePerformance(val exerciseId: String, val sets: List<SetPerformance>, val completedAt: LocalDateTime)
 data class WorkoutHistory(val sessions: List<CompletedWorkout> = emptyList())
 data class CompletedWorkout(val id: String, val plannedSessionId: String?, val completedAt: LocalDateTime, val durationMinutes: Int, val exercises: List<ExercisePerformance>)
+
+data class QuickWorkoutContext(
+    val generation: GenerationContext,
+    val availableMinutes: Int,
+    val now: LocalDateTime,
+    val weeklySessions: List<PlannedSession>,
+    val executedWeeklyVolume: Map<MovementPattern, Int> = emptyMap()
+)
 
 data class GenerationContext(
     val user: UserProfile,

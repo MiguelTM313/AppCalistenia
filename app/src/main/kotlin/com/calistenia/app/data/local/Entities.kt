@@ -2,6 +2,9 @@ package com.calistenia.app.data.local
 
 import androidx.room.*
 
+@Entity(tableName = "app_setup")
+data class AppSetupEntity(@PrimaryKey val id: Int = 1, val safetyAccepted: Boolean)
+
 @Entity(tableName = "user_profile")
 data class UserProfileEntity(@PrimaryKey val id: Long = 1, val age: Int, val sex: String?, val heightCm: Int, val weightKg: Double, val primaryGoal: String, val secondaryGoals: String, val experience: String, val calisthenicsExperience: String, val weeklyFrequency: Int, val availableDays: String, val minutesPerSession: Int, val location: String, val equipment: String, val preferences: String, val limitations: String, val onboardingComplete: Boolean)
 
@@ -24,7 +27,7 @@ data class PlannedSessionEntity(@PrimaryKey val id: String, val planId: String, 
 data class PlannedExerciseEntity(@PrimaryKey(autoGenerate = true) val id: Long = 0, val sessionId: String, val exerciseId: String, val sets: Int, val targetMin: Int, val targetMax: Int, val restSeconds: Int, val priority: Int, val rationale: String)
 
 @Entity(tableName = "workout_sessions", indices = [Index("plannedSessionId")])
-data class WorkoutSessionEntity(@PrimaryKey val id: String, val plannedSessionId: String?, val startedAt: Long, val completedAt: Long?, val durationMinutes: Int, val status: String)
+data class WorkoutSessionEntity(@PrimaryKey val id: String, val plannedSessionId: String?, val startedAt: Long, val completedAt: Long?, val durationMinutes: Int, val status: String, val readinessEnergy: Int? = null, val readinessSleep: Int? = null, val readinessSoreness: Int? = null, val readinessMotivation: Int? = null)
 
 @Entity(tableName = "exercise_sessions", foreignKeys = [ForeignKey(entity = WorkoutSessionEntity::class, parentColumns = ["id"], childColumns = ["workoutId"], onDelete = ForeignKey.CASCADE)], indices = [Index("workoutId"), Index("exerciseId")])
 data class ExerciseSessionEntity(@PrimaryKey(autoGenerate = true) val id: Long = 0, val workoutId: String, val exerciseId: String, val plannedSets: Int, val orderIndex: Int, val skipped: Boolean = false)
@@ -37,3 +40,5 @@ data class MeasurementEntity(@PrimaryKey(autoGenerate = true) val id: Long = 0, 
 
 data class PlannedExerciseRow(@Embedded val planned: PlannedExerciseEntity, @Relation(parentColumn = "exerciseId", entityColumn = "id") val exercise: ExerciseEntity)
 data class SessionWithExercises(@Embedded val session: PlannedSessionEntity, @Relation(entity = PlannedExerciseEntity::class, parentColumn = "id", entityColumn = "sessionId") val exerciseRows: List<PlannedExerciseRow>)
+data class ExerciseSessionWithSets(@Embedded val exerciseSession: ExerciseSessionEntity, @Relation(parentColumn = "id", entityColumn = "exerciseSessionId") val sets: List<SetLogEntity>)
+data class WorkoutWithExercises(@Embedded val workout: WorkoutSessionEntity, @Relation(entity = ExerciseSessionEntity::class, parentColumn = "id", entityColumn = "workoutId") val exercises: List<ExerciseSessionWithSets>)
