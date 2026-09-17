@@ -7,6 +7,8 @@ import com.calistenia.app.data.local.*
 import com.calistenia.domain.model.*
 import kotlinx.coroutines.runBlocking
 import org.junit.*
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import java.time.*
