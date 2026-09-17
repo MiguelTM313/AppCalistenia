@@ -16,5 +16,4 @@ captures/
 *.sqlite
 *.sqlite3
 *.hprof
-app/schemas/
 /gradle/wrapper/gradle-wrapper.jar

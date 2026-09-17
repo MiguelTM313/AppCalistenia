@@ -45,11 +45,38 @@ class AdaptiveCycleTest {
         assertEquals("push", TrainingPlanGenerator().generate(ctx).sessions.single().exercises.single().exercise.id)
     }
 
+    @Test fun `progression above functional level is rejected with explanation`() {
+        val unsafeJump = decline.copy(difficultyLevel = 9, minimumSuggestedLevel = 9)
+        val ctx = withHistory(performance("push", 12), performance("push", 12, daysAgo = 2))
+            .copy(exercises = listOf(push, unsafeJump), functionalProfile = FunctionalProfile(MovementPattern.entries.associateWith { 3 }))
+        val prescribed = TrainingPlanGenerator().generate(ctx).sessions.single().exercises.single()
+        assertEquals("push", prescribed.exercise.id)
+        assertTrue(prescribed.rationale.contains("rejeitada"))
+        assertTrue(prescribed.rationale.contains("nível"))
+    }
+
     @Test fun `quick workout stays in budget and prioritizes uncovered pattern`() {
         val ctx = context(days = 1, minutes = 30)
         val quick = GenerateQuickWorkoutUseCase()(QuickWorkoutContext(ctx, 15, LocalDateTime.of(2026, 9, 17, 12, 0), emptyList(), mapOf(MovementPattern.PUSH to 20)))
         assertTrue(quick.estimatedMinutes <= 16)
         assertNotEquals(MovementPattern.PUSH, quick.exercises.first().exercise.movementPattern)
+    }
+
+    @Test fun `weekly planned but uncovered pull outranks covered push`() {
+        val ctx = context(days = 1, minutes = 30, equipment = setOf(Equipment.NONE), level = 2)
+        val planned = TrainingPlanGenerator().generate(ctx).sessions.single()
+        val quick = GenerateQuickWorkoutUseCase()(QuickWorkoutContext(ctx, 15,
+            LocalDateTime.of(2026, 9, 17, 12, 0), listOf(planned), mapOf(MovementPattern.PUSH to 6)))
+        assertEquals(MovementPattern.PULL, quick.exercises.first().exercise.movementPattern)
+    }
+
+    @Test fun `quick workout budgets remain reasonable`() {
+        val ctx = context(days = 1, minutes = 30)
+        listOf(10, 15, 20, 30).forEach { minutes ->
+            val quick = GenerateQuickWorkoutUseCase()(QuickWorkoutContext(ctx, minutes, LocalDateTime.of(2026, 9, 17, 12, 0), emptyList()))
+            assertTrue("budget $minutes", quick.estimatedMinutes <= minutes + 1)
+            assertTrue(quick.exercises.isNotEmpty())
+        }
     }
 
     @Test fun `setup state resumes interrupted assessment and missing plan`() {

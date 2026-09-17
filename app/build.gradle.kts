@@ -26,6 +26,8 @@ android {
     testOptions { unitTests.isIncludeAndroidResources = true }
 }
 
+ksp { arg("room.schemaLocation", "$projectDir/schemas") }
+
 kotlin { jvmToolchain(17) }
 
 dependencies {

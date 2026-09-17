@@ -114,7 +114,9 @@ data class QuickWorkoutContext(
     val availableMinutes: Int,
     val now: LocalDateTime,
     val weeklySessions: List<PlannedSession>,
-    val executedWeeklyVolume: Map<MovementPattern, Int> = emptyMap()
+    val executedWeeklyVolume: Map<MovementPattern, Int> = emptyMap(),
+    val weekStart: LocalDate = now.toLocalDate().minusDays((now.dayOfWeek.value - 1).toLong()),
+    val weekEnd: LocalDate = weekStart.plusDays(6)
 )
 
 data class GenerationContext(

@@ -29,11 +29,11 @@ data class PlannedExerciseEntity(@PrimaryKey(autoGenerate = true) val id: Long =
 @Entity(tableName = "workout_sessions", indices = [Index("plannedSessionId")])
 data class WorkoutSessionEntity(@PrimaryKey val id: String, val plannedSessionId: String?, val startedAt: Long, val completedAt: Long?, val durationMinutes: Int, val status: String, val readinessEnergy: Int? = null, val readinessSleep: Int? = null, val readinessSoreness: Int? = null, val readinessMotivation: Int? = null)
 
-@Entity(tableName = "exercise_sessions", foreignKeys = [ForeignKey(entity = WorkoutSessionEntity::class, parentColumns = ["id"], childColumns = ["workoutId"], onDelete = ForeignKey.CASCADE)], indices = [Index("workoutId"), Index("exerciseId")])
-data class ExerciseSessionEntity(@PrimaryKey(autoGenerate = true) val id: Long = 0, val workoutId: String, val exerciseId: String, val plannedSets: Int, val orderIndex: Int, val skipped: Boolean = false)
+@Entity(tableName = "exercise_sessions", foreignKeys = [ForeignKey(entity = WorkoutSessionEntity::class, parentColumns = ["id"], childColumns = ["workoutId"], onDelete = ForeignKey.CASCADE)], indices = [Index("workoutId"), Index("exerciseId"), Index(value = ["workoutId", "orderIndex"], unique = true)])
+data class ExerciseSessionEntity(@PrimaryKey(autoGenerate = true) val id: Long = 0, val workoutId: String, val exerciseId: String, val plannedSets: Int, val orderIndex: Int, val skipped: Boolean = false, @ColumnInfo(defaultValue = "'PENDING'") val completionStatus: String = "PENDING")
 
-@Entity(tableName = "set_logs", foreignKeys = [ForeignKey(entity = ExerciseSessionEntity::class, parentColumns = ["id"], childColumns = ["exerciseSessionId"], onDelete = ForeignKey.CASCADE)], indices = [Index("exerciseSessionId")])
-data class SetLogEntity(@PrimaryKey(autoGenerate = true) val id: Long = 0, val exerciseSessionId: Long, val setIndex: Int, val plannedValue: Int, val actualReps: Int?, val actualSeconds: Int?, val rir: Int?, val discomfort: String, val techniqueGood: Boolean)
+@Entity(tableName = "set_logs", foreignKeys = [ForeignKey(entity = ExerciseSessionEntity::class, parentColumns = ["id"], childColumns = ["exerciseSessionId"], onDelete = ForeignKey.CASCADE)], indices = [Index("exerciseSessionId"), Index(value = ["exerciseSessionId", "setIndex"], unique = true)])
+data class SetLogEntity(@PrimaryKey(autoGenerate = true) val id: Long = 0, val exerciseSessionId: Long, val setIndex: Int, val plannedValue: Int, val actualReps: Int?, val actualSeconds: Int?, val rir: Int?, val discomfort: String, val techniqueGood: Boolean, @ColumnInfo(defaultValue = "'COMPLETED'") val status: String = "COMPLETED", @ColumnInfo(defaultValue = "0") val recordedAt: Long = 0)
 
 @Entity(tableName = "measurements")
 data class MeasurementEntity(@PrimaryKey(autoGenerate = true) val id: Long = 0, val recordedAt: Long, val weightKg: Double?, val notes: String)

@@ -8,7 +8,7 @@
 2. calcula cada nível funcional independentemente;
 3. filtra exercícios ativos cujo equipamento obrigatório está disponível e cujo nível mínimo não excede o nível atual mais uma margem de entrada;
 4. ordena candidatos deterministicamente, favorecendo adequação de dificuldade e continuidade recente;
-5. avalia o exercício atual, valida equipamento antes de avançar/regredir e aplica deload por volume;
+5. avalia o exercício atual e centraliza a validação de qualquer avanço/regressão (atividade, padrão, equipamento, nível mínimo e salto máximo de dificuldade), mantendo a variação atual com justificativa quando inválida;
 6. cria séries/faixas e uma justificativa textual com a decisão;
 7. entrega cada sessão ao `SessionTimeOptimizer`.
 
@@ -23,11 +23,15 @@ O plano e a execução usam tabelas distintas. Uma conclusão cria `WorkoutSessi
 - **regredir/deload:** repetidamente abaixo do mínimo ou com técnica inadequada;
 - **bloquear:** dor aguda, tontura ou falta de ar inesperada.
 
-Uma única sessão excepcional não promove o exercício e falha muscular não é requisito. Cada decisão contém um motivo legível e alimenta a geração seguinte. Uma progressão incompatível com os equipamentos é rejeitada, mantendo a variação atual.
+Uma única sessão excepcional não promove o exercício e falha muscular não é requisito. Cada decisão contém um motivo legível e alimenta a geração seguinte. Progressões incompatíveis com equipamento ou nível funcional são rejeitadas, mantendo a variação atual e explicando a razão.
+
+Séries são persistidas na confirmação, antes de avançar o player. Pular depois de executar parte do exercício marca somente as posições restantes como não realizadas; volume considera apenas logs `COMPLETED`, enquanto dor aguda/tontura/falta de ar presentes nesses logs continuam bloqueando progressão.
+
+Readiness é aplicado uma única vez, na transição `PLANNED → IN_PROGRESS`. Score baixo limita séries por regras determinísticas do `SessionTimeOptimizer` e registra a justificativa; normal ou alto não aumenta a dificuldade. Retomadas reutilizam readiness, prescrição e `startedAt` persistidos, sem nova adaptação; sessões concluídas não são mutáveis.
 
 ## Treino rápido
 
-`GenerateQuickWorkoutUseCase` cria uma única `PlannedSession`, prioriza padrões com menor volume recente e usa `SessionTimeOptimizer`. Ela é persistida nas mesmas tabelas e não regenera o plano semanal.
+`GenerateQuickWorkoutUseCase` recebe as sessões do plano semanal e limites explícitos de segunda a domingo. Primeiro prioriza padrões planejados ainda sem cobertura, depois menor volume efetivamente executado na semana, e finalmente ordem/prioridade e orçamento do `SessionTimeOptimizer`. A sessão rápida é persistida nas mesmas tabelas e soma ao mesmo histórico, mas seu plano separado não substitui nem altera o plano semanal.
 
 ## Reorganização semanal
 
@@ -41,4 +45,11 @@ Uma única sessão excepcional não promove o exercício e falha muscular não �
 - progressão exige exposições repetidas;
 - desempenho insuficiente pode regredir;
 - sintomas críticos impedem progressão;
+- pulo parcial preserva séries realizadas e sintomas;
+- readiness baixo reduz somente a sessão iniciada e não é reaplicado;
+- treino rápido usa cobertura da semana programada, não uma janela móvel aproximada;
 - reequilíbrio não exclui sessões anteriores.
+
+## Limitações restantes
+
+Ainda não há substituição avançada de exercícios nem cancelamento completo de uma sessão em andamento. Health Connect, câmera, backend, autenticação e replanejamento visual/versionado continuam fora deste incremento.
