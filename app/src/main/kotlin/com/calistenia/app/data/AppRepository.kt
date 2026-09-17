@@ -37,7 +37,9 @@ class AppRepository(private val db: AppDatabase) {
     suspend fun workoutHistory(): WorkoutHistory = WorkoutHistory(dao.completedWorkouts().mapNotNull { row ->
         val completedAt = row.workout.completedAt ?: return@mapNotNull null
         CompletedWorkout(row.workout.id, row.workout.plannedSessionId, instant(completedAt), row.workout.durationMinutes,
-            row.exercises.sortedBy { it.exerciseSession.orderIndex }.map { exercise ->
+            row.exercises.sortedBy { it.exerciseSession.orderIndex }
+                .filterNot { it.exerciseSession.completionStatus == "FULLY_SKIPPED" }
+                .map { exercise ->
                 ExercisePerformance(exercise.exerciseSession.exerciseId, exercise.sets.sortedBy { it.setIndex }.filter { it.status == "COMPLETED" }.map { set ->
                     SetPerformance(set.plannedValue.takeIf { set.actualReps != null }, set.actualReps, set.plannedValue.takeIf { set.actualSeconds != null }, set.actualSeconds, set.rir, Discomfort.valueOf(set.discomfort), set.techniqueGood)
                 }, instant(completedAt))
@@ -84,9 +86,10 @@ class AppRepository(private val db: AppDatabase) {
         val generation = generationContext(now.toLocalDate(), readiness) ?: return null
         val planId = dao.latestWeeklyPlanId()
         val weekly = planId?.let { dao.sessionsForPlan(it).map(::toDomainSession) }.orEmpty()
-        val weekStart = weekly.minOfOrNull { it.date }?.with(DayOfWeek.MONDAY)
-            ?: now.toLocalDate().with(DayOfWeek.MONDAY)
+        val today = now.toLocalDate()
+        val weekStart = today.minusDays((today.dayOfWeek.value - DayOfWeek.MONDAY.value).toLong())
         val weekEnd = weekStart.plusDays(6)
+        val currentWeekSessions = weekly.filter { !it.date.isBefore(weekStart) && !it.date.isAfter(weekEnd) }
         val volume = generation.history.sessions
             .filter { !it.completedAt.toLocalDate().isBefore(weekStart) && !it.completedAt.toLocalDate().isAfter(weekEnd) }
             .flatMap { it.exercises }
@@ -94,7 +97,7 @@ class AppRepository(private val db: AppDatabase) {
             .filterKeys { it != null }
             .mapKeys { it.key!! }
             .mapValues { (_, values) -> values.sumOf { performance -> performance.sets.count(::performed) } }
-        return QuickWorkoutContext(generation, minutes, now, weekly, volume, weekStart, weekEnd)
+        return QuickWorkoutContext(generation, minutes, now, currentWeekSessions, volume, weekStart, weekEnd)
     }
 
     suspend fun startSession(sessionId: String, readiness: Readiness, now: Long = System.currentTimeMillis()): String = db.withTransaction {

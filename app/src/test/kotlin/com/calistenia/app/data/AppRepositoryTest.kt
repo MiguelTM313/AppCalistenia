@@ -105,7 +105,7 @@ class AppRepositoryTest {
         val stored = db.dao().completedWorkouts().single().exercises.single()
         assertEquals("FULLY_SKIPPED", stored.exerciseSession.completionStatus)
         assertEquals(3, stored.sets.count { it.status == "SKIPPED" })
-        assertTrue(repository.workoutHistory().sessions.single().exercises.single().sets.isEmpty())
+        assertTrue(repository.workoutHistory().sessions.single().exercises.isEmpty())
     }
 
     @Test fun `low readiness adapts once while normal and high keep prescription`() = runBlocking {
@@ -133,6 +133,27 @@ class AppRepositoryTest {
         assertEquals(1, context.executedWeeklyVolume[MovementPattern.PUSH])
         assertEquals("Treino", db.dao().plannedSession("session")!!.session.title)
         assertEquals("PLANNED", db.dao().plannedSession("session")!!.session.status)
+    }
+
+    @Test fun `quick workout uses current calendar week when latest weekly plan is stale`() = runBlocking {
+        val stale = plan().copy(
+            id = "plan-stale",
+            weekStart = LocalDate.of(2026, 9, 7),
+            sessions = listOf(plan().sessions.single().copy(id = "stale-session", date = LocalDate.of(2026, 9, 10)))
+        )
+        repository.savePlan(stale)
+        val quick = plan().copy(id = "quick-plan-current", sessions = listOf(plan().sessions.single().copy(id = "quick-current")))
+        repository.savePlan(quick)
+        val start = Instant.parse("2026-09-17T10:00:00Z").toEpochMilli()
+        repository.startSession("quick-current", Readiness(3, 3, 3, 3), start)
+        repository.saveSet("quick-current", SetInput("push", 0, 10, 2), start + 1_000)
+        repository.completeSession("quick-current", start + 60_000)
+
+        val context = repository.quickWorkoutContext(15, Readiness(3, 3, 3, 3), LocalDateTime.of(2026, 9, 17, 12, 0))!!
+        assertEquals(LocalDate.of(2026, 9, 14), context.weekStart)
+        assertEquals(LocalDate.of(2026, 9, 20), context.weekEnd)
+        assertTrue(context.weeklySessions.isEmpty())
+        assertEquals(1, context.executedWeeklyVolume[MovementPattern.PUSH])
     }
 
     private fun plan(sets: Int = 1): TrainingPlan {
