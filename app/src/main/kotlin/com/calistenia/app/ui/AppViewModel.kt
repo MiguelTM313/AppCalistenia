@@ -11,14 +11,16 @@ import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import java.time.DayOfWeek
 
-data class AppUiState(val loading: Boolean = true, val profile: UserProfileEntity? = null, val sessions: List<SessionWithExercises> = emptyList(), val history: List<WorkoutSessionEntity> = emptyList(), val exercises: List<ExerciseEntity> = emptyList(), val setup: SetupState? = null, val error: String? = null)
+data class AppUiState(val loading: Boolean = true, val profile: UserProfileEntity? = null, val sessions: List<SessionWithExercises> = emptyList(), val history: List<WorkoutSessionEntity> = emptyList(), val exercises: List<ExerciseEntity> = emptyList(), val player: WorkoutPlayerState? = null, val setup: SetupState? = null, val error: String? = null)
 
 class AppViewModel(private val repository: AppRepository) : ViewModel() {
     private val error = MutableStateFlow<String?>(null)
     private val setup = MutableStateFlow<SetupState?>(null)
-    private val metadata = combine(setup, error) { setupState, message -> setupState to message }
+    private val playerSessionId = MutableStateFlow<String?>(null)
+    private val player = playerSessionId.flatMapLatest { id -> id?.let(repository::player) ?: flowOf(null) }
+    private val metadata = combine(setup, error, player) { setupState, message, playerState -> Triple(setupState, message, playerState) }
     val state: StateFlow<AppUiState> = combine(repository.profile(), repository.planSessions(), repository.history(), repository.exercises(), metadata) { profile, sessions, history, exercises, meta ->
-        AppUiState(meta.first == null, profile, sessions, history, exercises, meta.first, meta.second)
+        AppUiState(meta.first == null, profile, sessions, history, exercises, meta.third, meta.first, meta.second)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), AppUiState())
 
     init { viewModelScope.launch {
@@ -50,15 +52,19 @@ class AppViewModel(private val repository: AppRepository) : ViewModel() {
         done?.invoke()
     }
 
-    fun start(sessionId: String, readiness: Readiness, done: () -> Unit) = launch { repository.startSession(sessionId, readiness); done() }
+    fun openPlayer(sessionId: String) { playerSessionId.value = sessionId }
+    fun start(sessionId: String, readiness: Readiness, done: () -> Unit) = launch { repository.startSession(sessionId, readiness); playerSessionId.value = sessionId; done() }
     fun quick(minutes: Int, readiness: Readiness, done: (String) -> Unit) = launch {
-        val context = repository.generationContext(readiness = readiness) ?: return@launch
-        val session = GenerateQuickWorkoutUseCase()(QuickWorkoutContext(context, minutes, java.time.LocalDateTime.now(), emptyList()))
+        val context = repository.quickWorkoutContext(minutes, readiness, java.time.LocalDateTime.now()) ?: return@launch
+        val session = GenerateQuickWorkoutUseCase()(context)
         repository.savePlan(TrainingPlan("quick-plan-${session.id}", session.date, listOf(session), listOf("Sessão rápida contextual; plano semanal preservado.")))
         repository.startSession(session.id, readiness)
+        playerSessionId.value = session.id
         done(session.id)
     }
-    fun complete(sessionId: String, inputs: List<SetInput>, done: () -> Unit) = launch { repository.completeSession(sessionId, inputs); done() }
+    fun saveSet(sessionId: String, input: SetInput) = launch { repository.saveSet(sessionId, input) }
+    fun skipExercise(sessionId: String, exerciseId: String) = launch { repository.skipExerciseRemainder(sessionId, exerciseId) }
+    fun complete(sessionId: String, done: () -> Unit) = launch { repository.completeSession(sessionId); playerSessionId.value = null; done() }
     private suspend fun refreshSetup() { setup.value = repository.setupState() }
     private fun launch(block: suspend () -> Unit) = viewModelScope.launch { runCatching { block() }.onFailure { error.value = it.message } }
 }

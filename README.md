@@ -28,9 +28,11 @@ docs/                          decisões e regras do motor
 
 `UserProfile`, `FunctionalProfile`, `Exercise`, `TrainingPlan`/`PlannedSession`, `WorkoutSession`, `ExerciseSession`, `SetLog`, `AssessmentResult` e `Readiness`. O histórico realizado é armazenado separadamente do plano, de modo que uma futura reprogramação não o sobrescreva.
 
-### Schema Room v2
+### Persistência incremental e schema Room v3
 
-A migration explícita `1 → 2` cria `app_setup` para a etapa de segurança e adiciona a `workout_sessions` as colunas anuláveis `readinessEnergy`, `readinessSleep`, `readinessSoreness` e `readinessMotivation`. A nulabilidade mantém compatibilidade com sessões antigas; nenhuma tabela de histórico é recriada ou apagada.
+O início cria a execução e seus exercícios; cada confirmação de série, edição confirmada e pulo do restante é uma transação Room. A chave única `(exerciseSessionId, setIndex)` torna a gravação idempotente. O player observado pelo ViewModel recompõe séries, próxima série, readiness e `startedAt` do banco, inclusive após encerramento do processo.
+
+O schema v3 acrescenta estado explícito a exercícios e séries, horário do registro e índices únicos. `MIGRATION_2_3` preserva os logs/readiness existentes, e `MIGRATION_1_2` permanece disponível para o caminho `1 → 2 → 3`; não há migração destrutiva. Os snapshots textuais ficam em `app/schemas`.
 
 ## Compilar e testar
 
@@ -54,7 +56,7 @@ Este incremento prioriza a fundação e não declara o produto completo. Próxim
 
 1. ampliar onboarding para sexo opcional, objetivos secundários, preferências, limitações, local, frequência e seleção completa de dias/equipamentos;
 2. substituir os sliders de autoavaliação por protocolos guiados, escolha automática de testes e bloqueios detalhados da triagem;
-3. oferecer edição/substituição avançada e controles completos de cancelamento durante a sessão;
+3. oferecer substituição avançada e controles completos de cancelamento da sessão (a confirmação de uma série já pode sobrescrever idempotentemente o mesmo índice);
 4. persistir versões imutáveis de replanejamento e expor `ScheduleRebalancer` com confirmação na navegação semanal;
 6. telas dedicadas de detalhe de exercício, perfil, configurações, resultados de avaliação e dashboard completo;
 7. milestones, reavaliações periódicas, exportação/importação e acessibilidade/testes instrumentados;

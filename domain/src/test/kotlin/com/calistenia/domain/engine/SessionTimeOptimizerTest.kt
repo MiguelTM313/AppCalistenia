@@ -17,4 +17,14 @@ class SessionTimeOptimizerTest {
         assertTrue(result.exercises.first().exercise.id == "push")
         assertTrue(result.exercises.isNotEmpty())
     }
+
+
+    @Test fun `only low readiness reduces volume`() {
+        val exercise = PlannedExercise(exercise("push", MovementPattern.PUSH, 2), 4, 8, 12, 60, 0, "priority")
+        val session = PlannedSession("id", LocalDate.now(), "test", listOf(exercise), 30)
+        val optimizer = SessionTimeOptimizer()
+        assertTrue(optimizer.optimize(session, 30, Readiness(1, 1, 5, 1)).exercises.single().sets < 4)
+        assertTrue(optimizer.optimize(session, 30, Readiness(3, 3, 3, 3)).exercises.single().sets == 4)
+        assertTrue(optimizer.optimize(session, 30, Readiness(5, 5, 1, 5)).exercises.single().sets == 4)
+    }
 }

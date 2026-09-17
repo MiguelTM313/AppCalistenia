@@ -15,8 +15,8 @@ class TrainingPlanGenerator(
         val sessions = days.mapIndexed { index, day ->
             val patterns = templates[index % templates.size]
             val selected = patterns.mapNotNull { pattern -> selectExercise(context, pattern) }
-                .distinctBy { it.id }
-                .mapIndexed { priority, exercise -> prescription(context, exercise, priority) }
+                .distinctBy { it.exercise.id }
+                .mapIndexed { priority, selection -> prescription(context, selection.exercise, priority, selection.validationNote) }
             val date = weekStart.plusDays((day.value - 1).toLong())
             val base = PlannedSession("${weekStart}-$index", date, title(days.size, index), selected, 0)
             timeOptimizer.optimize(base, context.user.availability.defaultMinutes, context.readiness)
@@ -29,7 +29,9 @@ class TrainingPlanGenerator(
         )
     }
 
-    internal fun selectExercise(context: GenerationContext, pattern: MovementPattern): Exercise? {
+    private data class Selection(val exercise: Exercise, val validationNote: String = "")
+
+    private fun selectExercise(context: GenerationContext, pattern: MovementPattern): Selection? {
         val available = context.user.equipment + Equipment.NONE
         val level = context.functionalProfile.levelFor(pattern)
         val candidates = context.exercises.filter {
@@ -50,10 +52,22 @@ class TrainingPlanGenerator(
             ProgressionAction.REGRESS -> current.regressionExerciseId
             else -> null
         }?.let { id -> context.exercises.firstOrNull { it.id == id } }
-        return suggested?.takeIf { it.active && it.movementPattern == pattern && it.requiredEquipment.all(available::contains) } ?: current
+        if (suggested == null) return Selection(current)
+        val invalidReason = candidateProblem(suggested, pattern, level, available)
+        return if (invalidReason == null) Selection(suggested)
+        else Selection(current, "Variação sugerida ${suggested.name} rejeitada: $invalidReason; exercício atual mantido.")
     }
 
-    private fun prescription(context: GenerationContext, exercise: Exercise, priority: Int): PlannedExercise {
+    private fun candidateProblem(exercise: Exercise, pattern: MovementPattern, level: Int, available: Set<Equipment>): String? = when {
+        !exercise.active -> "exercício inativo"
+        exercise.movementPattern != pattern -> "padrão de movimento incompatível"
+        !exercise.requiredEquipment.all(available::contains) -> "equipamento indisponível"
+        exercise.minimumSuggestedLevel > level + 1 -> "nível mínimo ${exercise.minimumSuggestedLevel} excede o nível funcional $level"
+        exercise.difficultyLevel > level + 1 -> "dificuldade ${exercise.difficultyLevel} salta acima do nível funcional $level"
+        else -> null
+    }
+
+    private fun prescription(context: GenerationContext, exercise: Exercise, priority: Int, validationNote: String): PlannedExercise {
         val lowReadiness = context.readiness?.score?.let { it < 2.5 } == true
         val range = exercise.suggestedRepRange ?: (exercise.suggestedDurationSeconds ?: 30).let { it..it }
         val performances = context.history.sessions.flatMap { it.exercises }
@@ -75,7 +89,7 @@ class TrainingPlanGenerator(
             targetMax = range.last,
             restSeconds = exercise.defaultRestSeconds,
             priority = priority,
-            rationale = "${decision.reason} ${exercise.name} é compatível com o objetivo ${context.user.primaryGoal.name.lowercase()}, nível ${context.functionalProfile.levelFor(exercise.movementPattern)}, volume recente ($recentVolume séries) e equipamentos disponíveis."
+            rationale = "${if (validationNote.isBlank()) "" else "$validationNote "}${decision.reason} ${exercise.name} é compatível com o objetivo ${context.user.primaryGoal.name.lowercase()}, nível ${context.functionalProfile.levelFor(exercise.movementPattern)}, volume recente ($recentVolume séries) e equipamentos disponíveis."
         )
     }
 

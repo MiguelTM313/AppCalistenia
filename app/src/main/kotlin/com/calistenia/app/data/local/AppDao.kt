@@ -30,10 +30,16 @@ interface AppDao {
     @Transaction @Query("SELECT * FROM planned_sessions WHERE id = :id") suspend fun plannedSession(id: String): SessionWithExercises?
     @Insert(onConflict = OnConflictStrategy.IGNORE) suspend fun startWorkout(workout: WorkoutSessionEntity)
     @Query("UPDATE planned_sessions SET status='IN_PROGRESS' WHERE id=:id AND status='PLANNED'") suspend fun markInProgress(id: String)
+    @Query("UPDATE planned_sessions SET estimatedMinutes=:minutes WHERE id=:id AND status='PLANNED'") suspend fun updatePlannedMinutes(id: String, minutes: Int)
     @Query("SELECT * FROM workout_sessions WHERE plannedSessionId=:sessionId AND status='IN_PROGRESS' LIMIT 1") suspend fun inProgressWorkout(sessionId: String): WorkoutSessionEntity?
     @Query("SELECT * FROM workout_sessions WHERE status='IN_PROGRESS' ORDER BY startedAt DESC LIMIT 1") fun observeInProgressWorkout(): Flow<WorkoutSessionEntity?>
-    @Insert suspend fun addExerciseSession(session: ExerciseSessionEntity): Long
-    @Insert suspend fun addSetLog(log: SetLogEntity)
+    @Transaction @Query("SELECT * FROM workout_sessions WHERE plannedSessionId=:sessionId AND status='IN_PROGRESS' LIMIT 1") fun observeWorkout(sessionId: String): Flow<WorkoutWithExercises?>
+    @Query("SELECT * FROM exercise_sessions WHERE workoutId=:workoutId AND orderIndex=:orderIndex LIMIT 1") suspend fun exerciseSession(workoutId: String, orderIndex: Int): ExerciseSessionEntity?
+    @Query("SELECT * FROM set_logs WHERE exerciseSessionId=:exerciseSessionId AND setIndex=:setIndex LIMIT 1") suspend fun setLog(exerciseSessionId: Long, setIndex: Int): SetLogEntity?
+    @Insert(onConflict = OnConflictStrategy.IGNORE) suspend fun addExerciseSession(session: ExerciseSessionEntity): Long
+    @Upsert suspend fun saveExerciseSession(session: ExerciseSessionEntity)
+    @Query("UPDATE exercise_sessions SET completionStatus=:status, skipped=:fullySkipped WHERE id=:id") suspend fun updateExerciseStatus(id: Long, status: String, fullySkipped: Boolean)
+    @Upsert suspend fun addSetLog(log: SetLogEntity)
     @Query("UPDATE workout_sessions SET completedAt = :completedAt, durationMinutes = :minutes, status = 'COMPLETED' WHERE id = :id") suspend fun completeWorkout(id: String, completedAt: Long, minutes: Int)
     @Query("UPDATE planned_sessions SET status = 'COMPLETED' WHERE id = :id") suspend fun completePlannedSession(id: String)
     @Query("SELECT * FROM workout_sessions WHERE status = 'COMPLETED' ORDER BY completedAt DESC") fun observeHistory(): Flow<List<WorkoutSessionEntity>>
