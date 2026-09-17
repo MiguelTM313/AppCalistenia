@@ -468,7 +468,8 @@
             ],
             "orders": [
               "ASC"
-            ]
+            ],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_planned_sessions_planId` ON `${TABLE_NAME}` (`planId`)"
           }
         ],
         "foreignKeys": [
@@ -559,7 +560,8 @@
             ],
             "orders": [
               "ASC"
-            ]
+            ],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_planned_exercises_sessionId` ON `${TABLE_NAME}` (`sessionId`)"
           },
           {
             "name": "index_planned_exercises_exerciseId",
@@ -569,7 +571,8 @@
             ],
             "orders": [
               "ASC"
-            ]
+            ],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_planned_exercises_exerciseId` ON `${TABLE_NAME}` (`exerciseId`)"
           }
         ],
         "foreignKeys": [
@@ -666,7 +669,8 @@
             ],
             "orders": [
               "ASC"
-            ]
+            ],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_workout_sessions_plannedSessionId` ON `${TABLE_NAME}` (`plannedSessionId`)"
           }
         ],
         "foreignKeys": []
@@ -734,7 +738,8 @@
             ],
             "orders": [
               "ASC"
-            ]
+            ],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_exercise_sessions_workoutId` ON `${TABLE_NAME}` (`workoutId`)"
           },
           {
             "name": "index_exercise_sessions_exerciseId",
@@ -744,7 +749,8 @@
             ],
             "orders": [
               "ASC"
-            ]
+            ],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_exercise_sessions_exerciseId` ON `${TABLE_NAME}` (`exerciseId`)"
           },
           {
             "name": "index_exercise_sessions_workoutId_orderIndex",
@@ -756,7 +762,8 @@
             "orders": [
               "ASC",
               "ASC"
-            ]
+            ],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_exercise_sessions_workoutId_orderIndex` ON `${TABLE_NAME}` (`workoutId`, `orderIndex`)"
           }
         ],
         "foreignKeys": [
@@ -861,7 +868,8 @@
             ],
             "orders": [
               "ASC"
-            ]
+            ],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_set_logs_exerciseSessionId` ON `${TABLE_NAME}` (`exerciseSessionId`)"
           },
           {
             "name": "index_set_logs_exerciseSessionId_setIndex",
@@ -873,7 +881,8 @@
             "orders": [
               "ASC",
               "ASC"
-            ]
+            ],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_set_logs_exerciseSessionId_setIndex` ON `${TABLE_NAME}` (`exerciseSessionId`, `setIndex`)"
           }
         ],
         "foreignKeys": [
