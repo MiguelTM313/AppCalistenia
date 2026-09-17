@@ -82,7 +82,29 @@ class TrainingPlanGenerator(
     private fun templatesFor(count: Int): List<List<MovementPattern>> = when (count) {
         1 -> listOf(fullBody())
         2 -> listOf(fullBody(), listOf(MovementPattern.LEGS, MovementPattern.PULL, MovementPattern.PUSH, MovementPattern.CORE, MovementPattern.MOBILITY))
-        3 -> List(3) { fullBody().drop(it % 2) + fullBody().take(it % 2) }
+        3 -> listOf(
+            listOf(
+                MovementPattern.PUSH,
+                MovementPattern.PULL,
+                MovementPattern.LEGS,
+                MovementPattern.CORE,
+                MovementPattern.MOBILITY
+            ),
+            listOf(
+                MovementPattern.LEGS,
+                MovementPattern.PUSH,
+                MovementPattern.PULL,
+                MovementPattern.CORE,
+                MovementPattern.MOBILITY
+            ),
+            listOf(
+                MovementPattern.PULL,
+                MovementPattern.PUSH,
+                MovementPattern.LEGS,
+                MovementPattern.CORE,
+                MovementPattern.MOBILITY
+            )
+        )
         4 -> listOf(
             listOf(MovementPattern.PUSH, MovementPattern.PULL, MovementPattern.CORE, MovementPattern.MOBILITY),
             listOf(MovementPattern.LEGS, MovementPattern.CORE, MovementPattern.MOBILITY),
