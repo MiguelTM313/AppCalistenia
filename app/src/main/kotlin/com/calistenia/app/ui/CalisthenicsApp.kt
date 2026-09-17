@@ -17,6 +17,7 @@ import com.calistenia.app.CalisthenicsApplication
 import com.calistenia.app.data.SetInput
 import com.calistenia.app.data.local.*
 import com.calistenia.domain.model.*
+import kotlinx.coroutines.delay
 
 @Composable fun CalisthenicsApp() {
     val application = LocalContext.current.applicationContext as CalisthenicsApplication
@@ -32,13 +33,21 @@ import com.calistenia.domain.model.*
 
 @Composable private fun AppNavigation(state: AppUiState, vm: AppViewModel) {
     val nav = rememberNavController()
-    NavHost(nav, if (state.profile == null) "safety" else "home") {
-        composable("safety") { SafetyScreen { nav.navigate("onboarding") } }
+    val initial = when (state.setup) { SetupState.SAFETY_PENDING, SetupState.PROFILE_PENDING -> "safety"; SetupState.ASSESSMENT_PENDING -> "assessment"; else -> "home" }
+    NavHost(nav, initial) {
+        composable("safety") { SafetyScreen { vm.acceptSafety { nav.navigate("onboarding") } } }
         composable("onboarding") { OnboardingScreen { age, height, weight, goal, days, minutes, equipment -> vm.finishOnboarding(age, height, weight, goal, days, minutes, equipment) { nav.navigate("assessment") } } }
         composable("assessment") { AssessmentScreen { levels -> vm.finishAssessment(levels) { nav.navigate("result") } } }
         composable("result") { SimpleScreen("Perfil funcional criado", "Seus níveis são independentes por padrão de movimento.", "Ver meu plano") { nav.navigate("home") { popUpTo("safety") { inclusive = true } } } }
-        composable("home") { HomeScreen(state, { nav.navigate("weekly") }, { nav.navigate("workout/$it") }, { minutes -> vm.regenerate(minutes) }, { nav.navigate("progress") }, { nav.navigate("library") }) }
-        composable("weekly") { WeeklyPlanScreen(state.sessions) { nav.navigate("workout/$it") } }
+        composable("home") { HomeScreen(state, { nav.navigate("weekly") }, { id, resume -> nav.navigate(if (resume) "workout/$id" else "readiness/session-$id") }, { nav.navigate("readiness/quick-$it") }, { nav.navigate("progress") }, { nav.navigate("library") }) }
+        composable("weekly") { WeeklyPlanScreen(state.sessions) { id, resume -> nav.navigate(if (resume) "workout/$id" else "readiness/session-$id") } }
+        composable("readiness/{target}", arguments = listOf(navArgument("target") { type = NavType.StringType })) { entry ->
+            val target = entry.arguments?.getString("target") ?: return@composable
+            ReadinessScreen { readiness ->
+                if (target.startsWith("quick-")) vm.quick(target.removePrefix("quick-").toInt(), readiness) { nav.navigate("workout/$it") }
+                else target.removePrefix("session-").let { id -> vm.start(id, readiness) { nav.navigate("workout/$id") } }
+            }
+        }
         composable("workout/{id}", arguments = listOf(navArgument("id") { type = NavType.StringType })) { entry ->
             val id = entry.arguments?.getString("id") ?: return@composable
             state.sessions.firstOrNull { it.session.id == id }?.let { WorkoutPlayerScreen(it) { values -> vm.complete(id, values) { nav.navigate("summary") } } }
@@ -82,28 +91,48 @@ import com.calistenia.domain.model.*
     Button({ done(MovementPattern.entries.associateWith { values[it]?.toInt() ?: 0 }) }, Modifier.fillMaxWidth()) { Text("Gerar programação") }
 }
 
-@Composable private fun HomeScreen(state: AppUiState, weekly: () -> Unit, workout: (String) -> Unit, quick: (Int) -> Unit, progress: () -> Unit, library: () -> Unit) = Page("Hoje") {
-    val next = state.sessions.firstOrNull { it.session.status == "PLANNED" }
-    Card(Modifier.fillMaxWidth()) { Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) { Text(next?.session?.title ?: "Plano em dia", style = MaterialTheme.typography.titleLarge); Text(next?.let { "${it.exerciseRows.size} exercícios • ~${it.session.estimatedMinutes} min" } ?: "Conclua uma avaliação para criar o treino."); if (next != null) Button({ workout(next.session.id) }, Modifier.fillMaxWidth().height(56.dp)) { Text("TREINAR AGORA") } } }
+@Composable private fun ReadinessScreen(done: (Readiness) -> Unit) = Page("Como você está agora?") {
+    Text("Prontidão é apenas uma heurística de treino, não uma avaliação médica.")
+    var energy by remember { mutableIntStateOf(3) }; var sleep by remember { mutableIntStateOf(3) }
+    var soreness by remember { mutableIntStateOf(3) }; var motivation by remember { mutableIntStateOf(3) }
+    fun label(name: String, value: Int) = "$name: $value/5"
+    Text(label("Energia", energy)); Slider(energy.toFloat(), { energy = it.toInt() }, valueRange = 1f..5f, steps = 3)
+    Text(label("Sono percebido", sleep)); Slider(sleep.toFloat(), { sleep = it.toInt() }, valueRange = 1f..5f, steps = 3)
+    Text(label("Dor muscular", soreness)); Slider(soreness.toFloat(), { soreness = it.toInt() }, valueRange = 1f..5f, steps = 3)
+    Text(label("Motivação", motivation)); Slider(motivation.toFloat(), { motivation = it.toInt() }, valueRange = 1f..5f, steps = 3)
+    Button({ done(Readiness(energy, sleep, soreness, motivation)) }, Modifier.fillMaxWidth()) { Text("Iniciar treino") }
+}
+
+@Composable private fun HomeScreen(state: AppUiState, weekly: () -> Unit, workout: (String, Boolean) -> Unit, quick: (Int) -> Unit, progress: () -> Unit, library: () -> Unit) = Page("Hoje") {
+    val next = state.sessions.firstOrNull { it.session.status == "IN_PROGRESS" } ?: state.sessions.firstOrNull { it.session.status == "PLANNED" }
+    val resuming = next?.session?.status == "IN_PROGRESS"
+    Card(Modifier.fillMaxWidth()) { Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) { Text(next?.session?.title ?: "Plano em dia", style = MaterialTheme.typography.titleLarge); Text(next?.let { "${it.exerciseRows.size} exercícios • ~${it.session.estimatedMinutes} min" } ?: "Conclua uma avaliação para criar o treino."); if (next != null) Button({ workout(next.session.id, resuming) }, Modifier.fillMaxWidth().height(56.dp)) { Text(if (resuming) "RETOMAR TREINO" else "TREINAR AGORA") } } }
     Text("Tenho alguns minutos agora", fontWeight = FontWeight.Bold); Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) { listOf(10, 15, 20, 30).forEach { OutlinedButton({ quick(it) }, contentPadding = PaddingValues(10.dp)) { Text("$it min") } } }
     Button(weekly, Modifier.fillMaxWidth()) { Text("Programação semanal") }; OutlinedButton(progress, Modifier.fillMaxWidth()) { Text("Progresso e histórico") }; OutlinedButton(library, Modifier.fillMaxWidth()) { Text("Biblioteca de exercícios") }
     state.error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
 }
 
-@Composable private fun WeeklyPlanScreen(sessions: List<SessionWithExercises>, workout: (String) -> Unit) = Page("Programação semanal") {
-    LazyColumn(verticalArrangement = Arrangement.spacedBy(10.dp)) { items(sessions, key = { it.session.id }) { item -> Card(onClick = { workout(item.session.id) }, modifier = Modifier.fillMaxWidth()) { Column(Modifier.padding(16.dp)) { Text(item.session.title, fontWeight = FontWeight.Bold); Text("${item.exerciseRows.size} exercícios • ${item.session.estimatedMinutes} min • ${item.session.status}") } } } }
+@Composable private fun WeeklyPlanScreen(sessions: List<SessionWithExercises>, workout: (String, Boolean) -> Unit) = Page("Programação semanal") {
+    LazyColumn(verticalArrangement = Arrangement.spacedBy(10.dp)) { items(sessions, key = { it.session.id }) { item -> Card(onClick = { if (item.session.status in setOf("PLANNED", "IN_PROGRESS")) workout(item.session.id, item.session.status == "IN_PROGRESS") }, modifier = Modifier.fillMaxWidth()) { Column(Modifier.padding(16.dp)) { Text(item.session.title, fontWeight = FontWeight.Bold); Text("${item.exerciseRows.size} exercícios • ${item.session.estimatedMinutes} min • ${item.session.status}") } } } }
 }
 
 @Composable private fun WorkoutPlayerScreen(session: SessionWithExercises, finish: (List<SetInput>) -> Unit) = Page(session.session.title) {
-    var exerciseIndex by remember { mutableIntStateOf(0) }; var setIndex by remember { mutableIntStateOf(0) }; var reps by remember { mutableIntStateOf(8) }; var rir by remember { mutableIntStateOf(2) }; val logs = remember { mutableStateListOf<SetInput>() }
+    var exerciseIndex by remember { mutableIntStateOf(0) }; var setIndex by remember { mutableIntStateOf(0) }; var value by remember { mutableIntStateOf(8) }; var rir by remember { mutableIntStateOf(2) }; var techniqueGood by remember { mutableStateOf(true) }; var discomfort by remember { mutableStateOf(Discomfort.NONE) }; var discomfortMenu by remember { mutableStateOf(false) }; var rest by remember { mutableIntStateOf(0) }; val logs = remember { mutableStateListOf<SetInput>() }
+    LaunchedEffect(rest) { if (rest > 0) { delay(1_000); rest-- } }
     val row = session.exerciseRows.sortedBy { it.planned.priority }.getOrNull(exerciseIndex)
     if (row == null) { Button({ finish(logs.toList()) }, Modifier.fillMaxWidth().height(56.dp)) { Text("Finalizar e salvar treino") }; return@Page }
     LinearProgressIndicator({ exerciseIndex.toFloat() / session.exerciseRows.size }, Modifier.fillMaxWidth()); Text("Exercício ${exerciseIndex + 1} de ${session.exerciseRows.size}")
     Text(row.exercise.name, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold); Text(row.exercise.instructions); Text("Série ${setIndex + 1} de ${row.planned.sets} • alvo ${row.planned.targetMin}–${row.planned.targetMax}")
-    Text("Repetições/segundos: $reps"); Slider(reps.toFloat(), { reps = it.toInt() }, valueRange = 1f..30f)
+    val timed = row.exercise.prescriptionType == PrescriptionType.TIME.name
+    val maximum = if (timed) maxOf(180, row.planned.targetMax * 2) else maxOf(50, row.planned.targetMax * 2)
+    if (setIndex == 0) value = value.coerceIn(1, maximum)
+    Text(if (timed) "Segundos realizados: $value" else "Repetições realizadas: $value"); Slider(value.toFloat(), { value = it.toInt() }, valueRange = 1f..maximum.toFloat())
     Text("RIR: $rir — repetições que ainda conseguiria fazer"); Slider(rir.toFloat(), { rir = it.toInt() }, valueRange = 0f..5f, steps = 4)
-    Button({ logs += SetInput(row.exercise.id, reps, rir); if (setIndex + 1 >= row.planned.sets) { exerciseIndex++; setIndex = 0 } else setIndex++ }, Modifier.fillMaxWidth().height(56.dp)) { Text("Concluir série") }
-    TextButton({ exerciseIndex++; setIndex = 0 }) { Text("Pular exercício") }; TextButton({}) { Text("Por que este exercício?") }; Text(row.planned.rationale, style = MaterialTheme.typography.bodySmall)
+    Row(verticalAlignment = Alignment.CenterVertically) { Checkbox(techniqueGood, { techniqueGood = it }); Text("Técnica adequada") }
+    Box { OutlinedButton({ discomfortMenu = true }) { Text("Desconforto: ${discomfort.name.lowercase()}") }; DropdownMenu(discomfortMenu, { discomfortMenu = false }) { Discomfort.entries.forEach { item -> DropdownMenuItem({ Text(item.name.lowercase()) }, { discomfort = item; discomfortMenu = false }) } } }
+    if (rest > 0) Text("Descanso: ${rest}s")
+    Button({ logs += SetInput(row.exercise.id, value, rir, discomfort, techniqueGood); rest = row.planned.restSeconds; if (setIndex + 1 >= row.planned.sets) { exerciseIndex++; setIndex = 0 } else setIndex++ }, enabled = rest == 0, modifier = Modifier.fillMaxWidth().height(56.dp)) { Text("Concluir série") }
+    TextButton({ logs += SetInput(row.exercise.id, skipped = true); exerciseIndex++; setIndex = 0; rest = 0 }) { Text("Pular exercício") }; Text(row.planned.rationale, style = MaterialTheme.typography.bodySmall)
 }
 
 @Composable private fun ProgressScreen(history: List<WorkoutSessionEntity>) = Page("Seu progresso") { Text("${history.size} sessões concluídas", style = MaterialTheme.typography.headlineSmall); Text("${history.sumOf { it.durationMinutes }} minutos treinados"); history.take(10).forEach { Text("• ${it.durationMinutes} min — registro preservado") } }

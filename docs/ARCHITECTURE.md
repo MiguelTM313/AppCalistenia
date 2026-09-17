@@ -19,11 +19,11 @@ A UI observa um único `StateFlow<AppUiState>` e envia intenções ao ViewModel.
 - **DataStore:** tema e unidade; nunca histórico complexo.
 - **Seed:** `ExerciseSeed` é idempotente e separado do motor. Progressões são ligadas por IDs.
 
-O banco começa na versão 1. Alterações futuras exigirão migrations explícitas e schemas versionados. Dados pessoais permanecem locais. A interface `HealthDataGateway` é um ponto opcional de integração futura e sua ausência não afeta o funcionamento.
+O banco está na versão 2. `MIGRATION_1_2` cria `app_setup` e acrescenta energia, sono percebido, dor muscular e motivação a `workout_sessions`; as colunas anuláveis preservam registros v1. Relações Room recompõem `WorkoutSession → ExerciseSession → SetLog` em `WorkoutHistory`. Dados pessoais permanecem locais.
 
 ## Segurança
 
-Triagem e mensagens não produzem diagnóstico. `ProgressionEngine` bloqueia progressão após sintomas críticos registrados. O próximo incremento deve tornar o registro de todos os desconfortos parte obrigatória do fluxo do player e persistir a decisão de bloqueio para revisão.
+Triagem e mensagens não produzem diagnóstico. `ProgressionEngine` bloqueia progressão após sintomas críticos registrados. O player registra desconforto por série; dor aguda, tontura ou falta de ar inesperada bloqueiam progressão automática.
 
 ## Escolhas deliberadas
 

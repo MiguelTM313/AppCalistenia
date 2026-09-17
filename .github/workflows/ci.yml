@@ -1,0 +1,40 @@
+name: Android CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - uses: android-actions/setup-android@v4
+        with:
+          packages: "platform-tools platforms;android-35 build-tools;35.0.0"
+          log-accepted-android-sdk-licenses: false
+
+      - uses: gradle/actions/setup-gradle@v5
+        with:
+          gradle-version: "8.14.3"
+
+      - name: Domain tests
+        run: gradle --no-daemon :domain:test
+
+      - name: App unit tests
+        run: gradle --no-daemon :app:testDebugUnitTest
+
+      - name: Assemble debug
+        run: gradle --no-daemon :app:assembleDebug
