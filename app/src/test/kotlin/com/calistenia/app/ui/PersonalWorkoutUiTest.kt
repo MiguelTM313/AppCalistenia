@@ -98,14 +98,17 @@ class PersonalWorkoutUiTest {
 
     @Test fun `watching instructions does not submit a set and retry stays reachable with large text`() {
         var saves = 0
+        val player = fixture()
         compose.setContent {
             CompositionLocalProvider(LocalDensity provides Density(LocalDensity.current.density, 1.5f)) {
-                CalisthenicsTheme { WorkoutPlayerScreen(fixture(), { saves++ }, {}, {}, {}) }
+                CalisthenicsTheme { WorkoutPlayerScreen(player, { saves++ }, {}, {}, {}) }
             }
         }
         compose.onNodeWithText("Como fazer este exercício").performScrollTo().performClick()
         compose.onNodeWithText("Ver vídeo").performScrollTo().performClick()
         compose.onNodeWithText("Demonstração • HASfit").assertExists()
+        compose.mainClock.advanceTimeBy(21_000)
+        compose.onNodeWithText("Não foi possível carregar o vídeo.", substring = true).assertExists()
         compose.onNodeWithText("Tentar novamente").performScrollTo().performClick()
         compose.onNodeWithText("Abrir no YouTube").performScrollTo().assertIsDisplayed()
         compose.onNodeWithText("Voltar às instruções").performScrollTo().performClick()

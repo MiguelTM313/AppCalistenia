@@ -65,4 +65,3 @@ Títulos/autores conferidos no oEmbed oficial e duração conferida nos metadado
 Testes automatizados cobrem os 36 IDs, identificadores inválidos, configuração do embed, sinais de erro, abertura/fechamento nas duas telas, nova tentativa e retorno ao registro de séries em tela pequena e fonte ampliada. Testes Room e do motor de treino continuam obrigatórios no CI.
 
 Robolectric não reproduz streaming real. Antes de distribuir em loja, conferir em aparelho/emulador com WebView atualizado: play/pausa, segundo plano, voltar, modo avião, nova tentativa, link externo e bloqueios regionais/incorporação. Esta versão é para teste pessoal; o APK debug precisa da mesma chave da instalação anterior para atualizar sem desinstalação.
-
