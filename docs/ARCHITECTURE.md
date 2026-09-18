@@ -31,6 +31,14 @@ Triagem e mensagens não produzem diagnóstico. `ProgressionEngine` bloqueia pro
 
 ## Escolhas deliberadas
 
+### Interface de treino pessoal
+
+`CalisthenicsApp` mantém um grafo de navegação estável durante o onboarding. `SetupScreens`, `OverviewScreens` e `WorkoutScreen` usam componentes comuns em `UiComponents`; páginas de formulário rolam, enquanto telas com `LazyColumn` mantêm altura delimitada. Rascunhos usam `rememberSaveable`; logs confirmados continuam exclusivos do Room.
+
+O ViewModel impede operações de escrita concorrentes pelo mesmo player e publica estado de processamento/erro. Falhas de inicialização podem ser tentadas novamente; cancelamento de coroutines não é convertido em erro do usuário. O repositório verifica dentro da transação que não existe outra sessão em andamento. `finishSession` registra as posições pendentes como puladas e conclui a sessão atomicamente. Séries e sintomas realizados são preservados, sem alteração de schema (Room v3).
+
+O histórico detalhado observa relações de exercícios/séries via Flow. O descanso usa `recordedAt` e a prescrição persistida; voltar à tela não reinicia a contagem. O cronômetro opcional da série usa o horário de início e exige confirmação antes de salvar. A tela se mantém acesa somente enquanto o player está visível.
+
 - injeção manual pequena em `Application`, evitando framework DI antes de haver complexidade que o justifique;
 - IDs estáveis de catálogo e datas no domínio com `java.time` (minSdk 28);
 - regras explicáveis: toda prescrição inclui `rationale` e todo resultado de progressão inclui `reason`;
