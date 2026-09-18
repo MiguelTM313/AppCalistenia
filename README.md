@@ -64,8 +64,8 @@ Os dados permanecem locais; desinstalar ou limpar os dados pode apagar o histór
 
 Este incremento prioriza a fundação e não declara o produto completo. Próximos blocos:
 
-1. ampliar onboarding para sexo opcional, objetivos secundários, preferências, limitações, local, frequência e seleção completa de dias/equipamentos;
-2. substituir os sliders de autoavaliação por protocolos guiados, escolha automática de testes e bloqueios detalhados da triagem;
+1. ampliar perfil para sexo opcional, objetivos secundários, preferências e limitações (dias, frequência e equipamentos já selecionáveis);
+2. substituir a autoestimativa por protocolos guiados e reavaliações;
 3. oferecer substituição avançada e edição visual de séries antigas (encerramento antecipado já está disponível);
 4. persistir versões imutáveis de replanejamento e expor `ScheduleRebalancer` com confirmação na navegação semanal;
 6. edição de perfil/configurações e demonstrações visuais de exercícios (biblioteca, resumo e histórico detalhado já disponíveis);

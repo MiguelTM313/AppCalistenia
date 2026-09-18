@@ -27,18 +27,20 @@ internal val LocalBusy = compositionLocalOf { false }
 @Composable internal fun Page(title: String, subtitle: String? = null, scrollable: Boolean = true,
     onBack: (() -> Unit)? = null, content: @Composable ColumnScope.() -> Unit) {
     val scroll = rememberScrollState()
-    Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background), contentAlignment = Alignment.TopCenter) {
-        val viewport = Modifier.widthIn(max = 680.dp).fillMaxSize().imePadding()
-        Column((if (scrollable) viewport.verticalScroll(scroll) else viewport).padding(20.dp), verticalArrangement = Arrangement.spacedBy(20.dp)) {
-            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
-                Text("CALISTENIA / EM CASA", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
-                if (onBack != null) TextButton(onClick = onBack) { Text("Voltar") }
+    Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background, contentColor = MaterialTheme.colorScheme.onBackground) {
+        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
+            val viewport = Modifier.widthIn(max = 680.dp).fillMaxSize().imePadding()
+            Column((if (scrollable) viewport.verticalScroll(scroll) else viewport).padding(20.dp), verticalArrangement = Arrangement.spacedBy(20.dp)) {
+                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
+                    Text("CALISTENIA / EM CASA", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
+                    if (onBack != null) TextButton(onClick = onBack) { Text("Voltar") }
+                }
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(title, style = MaterialTheme.typography.headlineLarge)
+                    subtitle?.let { Text(it, color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodyLarge) }
+                }
+                content()
             }
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text(title, style = MaterialTheme.typography.headlineLarge)
-                subtitle?.let { Text(it, color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodyLarge) }
-            }
-            content()
         }
     }
 }

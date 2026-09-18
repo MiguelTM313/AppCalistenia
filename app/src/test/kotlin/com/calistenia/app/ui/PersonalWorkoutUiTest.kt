@@ -10,6 +10,7 @@ import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.junit4.StateRestorationTester
 import androidx.compose.ui.unit.Density
 import com.calistenia.app.data.ExerciseSeed
+import com.calistenia.app.CalisthenicsApplication
 import com.calistenia.app.data.SetInput
 import com.calistenia.app.data.WorkoutPlayerState
 import com.calistenia.app.data.local.*
@@ -26,7 +27,7 @@ import java.time.DayOfWeek
 import java.time.LocalDate
 
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [35], qualifiers = "w360dp-h740dp")
+@Config(sdk = [35], qualifiers = "w360dp-h740dp", application = CalisthenicsApplication::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 class PersonalWorkoutUiTest {
     @get:Rule val compose = createAndroidComposeRule<ComponentActivity>()
@@ -108,6 +109,44 @@ class PersonalWorkoutUiTest {
         assertEquals(45L, remainingRestSeconds(player, 25_000L))
         assertEquals(0L, remainingRestSeconds(player, 90_000L))
         assertEquals(60L, remainingRestSeconds(player, 5_000L))
+    }
+
+    @Test fun `real app completes setup saves a set resumes and finishes into history`() {
+        compose.setContent { CalisthenicsApp() }
+        awaitText("Não tenho esses sinais")
+        compose.onNodeWithText("Não tenho esses sinais").performScrollTo().performClick()
+        awaitText("Idade (anos)")
+        compose.onNodeWithText("Idade (anos)").performScrollTo().performTextInput("28")
+        compose.onNodeWithText("Altura (cm)").performScrollTo().performTextInput("171")
+        compose.onNodeWithText("Peso (kg)").performScrollTo().performTextInput("98")
+        compose.onNodeWithText("Continuar").performScrollTo().performClick()
+        compose.onNodeWithText("Continuar").performScrollTo().performClick()
+        compose.onNodeWithText("Salvar e avaliar meu nível").performScrollTo().performClick()
+        awaitText("Criar meu plano")
+        compose.onNodeWithText("Criar meu plano").performScrollTo().performClick()
+        awaitText("Treino rápido de 15 min")
+        screenshot("05-home-full-app")
+        compose.onNodeWithText("Treino rápido de 15 min").performScrollTo().performClick()
+        compose.onNodeWithText("Começar treino").performScrollTo().performClick()
+        awaitText("Salvar série")
+        compose.onNodeWithText("Salvar série").performScrollTo().performClick()
+        awaitText("1 séries realizadas", substring = true)
+        compose.onNodeWithText("Voltar").performScrollTo().performClick()
+        awaitText("Retomar treino")
+        compose.onNodeWithText("Retomar treino").performScrollTo().performClick()
+        awaitText("1 séries realizadas", substring = true)
+        compose.onNodeWithText("Encerrar treino agora").performScrollTo().performClick()
+        compose.onNodeWithText("Encerrar e salvar").performClick()
+        awaitText("Treino registrado.")
+        compose.onNodeWithText("Voltar ao início").performScrollTo().performClick()
+        compose.onNodeWithText("Histórico", useUnmergedTree = true).performClick()
+        awaitText("Ver séries salvas +")
+        compose.onNodeWithText("Ver séries salvas +").performClick()
+        compose.onAllNodesWithText("Série 1 ·", substring = true).onFirst().assertExists()
+    }
+
+    private fun awaitText(text: String, substring: Boolean = false) {
+        compose.waitUntil(10_000) { compose.onAllNodesWithText(text, substring = substring).fetchSemanticsNodes().isNotEmpty() }
     }
 
     private fun screenshot(name: String) {
