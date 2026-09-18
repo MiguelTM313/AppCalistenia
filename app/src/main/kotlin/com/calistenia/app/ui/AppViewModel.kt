@@ -16,6 +16,7 @@ import java.time.DayOfWeek
 data class AppUiState(val loading: Boolean = true, val profile: UserProfileEntity? = null, val sessions: List<SessionWithExercises> = emptyList(), val history: List<WorkoutSessionEntity> = emptyList(), val exercises: List<ExerciseEntity> = emptyList(), val player: WorkoutPlayerState? = null, val setup: SetupState? = null, val error: String? = null, val busy: Boolean = false, val historyDetails: List<WorkoutWithExercises> = emptyList())
 private data class UiMetadata(val setup: SetupState?, val error: String?, val player: WorkoutPlayerState?, val busy: Boolean)
 
+@OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
 class AppViewModel(private val repository: AppRepository) : ViewModel() {
     private val error = MutableStateFlow<String?>(null)
     private val setup = MutableStateFlow<SetupState?>(null)

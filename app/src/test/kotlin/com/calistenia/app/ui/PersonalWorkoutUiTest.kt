@@ -1,11 +1,12 @@
 package com.calistenia.app.ui
 
 import android.graphics.Bitmap
+import android.graphics.Canvas
+import androidx.activity.ComponentActivity
 import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.test.*
-import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.junit4.StateRestorationTester
 import androidx.compose.ui.unit.Density
 import com.calistenia.app.data.ExerciseSeed
@@ -28,7 +29,7 @@ import java.time.LocalDate
 @Config(sdk = [35], qualifiers = "w360dp-h740dp")
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 class PersonalWorkoutUiTest {
-    @get:Rule val compose = createComposeRule()
+    @get:Rule val compose = createAndroidComposeRule<ComponentActivity>()
 
     @Test fun `profile validates input restores draft and completes all three steps on small screen`() {
         var selectedDays: Set<DayOfWeek>? = null
@@ -112,7 +113,14 @@ class PersonalWorkoutUiTest {
     private fun screenshot(name: String) {
         compose.waitForIdle()
         val folder = File("build/ui-screenshots").apply { mkdirs() }
-        File(folder, "$name.png").outputStream().use { compose.onRoot().captureToImage().asAndroidBitmap().compress(Bitmap.CompressFormat.PNG, 100, it) }
+        compose.runOnIdle {
+            // PixelCopy does not complete under Robolectric. Draw the real window with its native renderer.
+            val view = compose.activity.window.decorView
+            val bitmap = Bitmap.createBitmap(view.width, view.height, Bitmap.Config.ARGB_8888)
+            view.draw(Canvas(bitmap))
+            File(folder, "$name.png").outputStream().use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
+            bitmap.recycle()
+        }
     }
 
     private fun fixture(timed: Boolean = false): WorkoutPlayerState {
