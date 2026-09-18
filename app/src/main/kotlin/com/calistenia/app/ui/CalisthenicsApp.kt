@@ -2,6 +2,8 @@ package com.calistenia.app.ui
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -63,8 +65,22 @@ import kotlinx.coroutines.delay
     }
 }
 
-@Composable private fun Page(title: String, content: @Composable ColumnScope.() -> Unit) = Scaffold { padding ->
-    Column(Modifier.padding(padding).padding(horizontal = 20.dp).fillMaxSize(), verticalArrangement = Arrangement.spacedBy(16.dp), content = { Spacer(Modifier.height(12.dp)); Text(title, style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold); content() })
+@Composable private fun Page(
+    title: String,
+    scrollable: Boolean = true,
+    content: @Composable ColumnScope.() -> Unit
+) = Scaffold { padding ->
+    val scrollState = rememberScrollState()
+    // LazyColumn screens own their scrolling and must retain bounded height.
+    val viewport = Modifier.fillMaxSize().padding(padding).imePadding()
+    Column(
+        modifier = (if (scrollable) viewport.verticalScroll(scrollState) else viewport)
+            .padding(horizontal = 20.dp, vertical = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        Text(title, style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
+        content()
+    }
 }
 
 @Composable private fun SafetyScreen(next: () -> Unit) = Page("Antes de começar") {
@@ -117,7 +133,7 @@ import kotlinx.coroutines.delay
     state.error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
 }
 
-@Composable private fun WeeklyPlanScreen(sessions: List<SessionWithExercises>, workout: (String, Boolean) -> Unit) = Page("Programação semanal") {
+@Composable private fun WeeklyPlanScreen(sessions: List<SessionWithExercises>, workout: (String, Boolean) -> Unit) = Page("Programação semanal", scrollable = false) {
     LazyColumn(verticalArrangement = Arrangement.spacedBy(10.dp)) { items(sessions, key = { it.session.id }) { item -> Card(onClick = { if (item.session.status in setOf("PLANNED", "IN_PROGRESS")) workout(item.session.id, item.session.status == "IN_PROGRESS") }, modifier = Modifier.fillMaxWidth()) { Column(Modifier.padding(16.dp)) { Text(item.session.title, fontWeight = FontWeight.Bold); Text("${item.exerciseRows.size} exercícios • ${item.session.estimatedMinutes} min • ${item.session.status}") } } } }
 }
 
@@ -145,7 +161,7 @@ import kotlinx.coroutines.delay
 }
 
 @Composable private fun ProgressScreen(history: List<WorkoutSessionEntity>) = Page("Seu progresso") { Text("${history.size} sessões concluídas", style = MaterialTheme.typography.headlineSmall); Text("${history.sumOf { it.durationMinutes }} minutos treinados"); history.take(10).forEach { Text("• ${it.durationMinutes} min — registro preservado") } }
-@Composable private fun ExerciseLibraryScreen(exercises: List<ExerciseEntity>) = Page("Biblioteca") { LazyColumn { items(exercises, key = { it.id }) { Card(Modifier.fillMaxWidth().padding(vertical = 4.dp)) { Column(Modifier.padding(12.dp)) { Text(it.name, fontWeight = FontWeight.Bold); Text("${MovementPattern.valueOf(it.movementPattern).label()} • nível ${it.difficultyLevel}") } } } } }
+@Composable private fun ExerciseLibraryScreen(exercises: List<ExerciseEntity>) = Page("Biblioteca", scrollable = false) { LazyColumn { items(exercises, key = { it.id }) { Card(Modifier.fillMaxWidth().padding(vertical = 4.dp)) { Column(Modifier.padding(12.dp)) { Text(it.name, fontWeight = FontWeight.Bold); Text("${MovementPattern.valueOf(it.movementPattern).label()} • nível ${it.difficultyLevel}") } } } } }
 @Composable private fun SimpleScreen(title: String, message: String, action: String, next: () -> Unit) = Page(title) { Text(message); Button(next, Modifier.fillMaxWidth()) { Text(action) } }
 
 private fun Goal.label() = when (this) { Goal.STRENGTH -> "Ganhar força"; Goal.HYPERTROPHY -> "Hipertrofia"; Goal.CONDITIONING -> "Condicionamento"; Goal.FAT_LOSS_SUPPORT -> "Redução de gordura (apoio)"; Goal.CALISTHENICS_SKILLS -> "Dominar movimentos"; Goal.MOBILITY -> "Mobilidade"; Goal.GENERAL_HEALTH -> "Saúde geral" }
