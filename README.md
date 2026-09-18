@@ -1,5 +1,9 @@
 # Calistenia em Casa
 
+Versão **1.0** (`versionCode = 2`), para uso pessoal. Após instalar, o app aparece como **Calistenia em Casa**, com ícone verde de um atleta sob um telhado. O ícone é adaptativo e oferece camada monocromática para os temas do Android 13 ou superior.
+
+Para atualizar preservando os treinos, compile usando a mesma chave da instalação anterior. APKs debug gerados em máquinas/execuções diferentes do CI podem ter assinaturas diferentes; nesse caso o Android recusa a atualização. **Não desinstale o app para contornar esse erro se já houver registros que queira manter.** O pacote continua `com.calistenia.app` e o banco permanece no schema v3.
+
 Aplicativo Android nativo, offline-first, que transforma perfil funcional, objetivos, disponibilidade, equipamento e histórico em uma prescrição explicável. O produto não usa um “nível geral”: `PUSH`, `PULL`, `LEGS`, `CORE`, `MOBILITY` e `CONDITIONING` evoluem independentemente.
 
 > **Segurança:** o aplicativo não é dispositivo médico, não diagnostica lesões ou doenças e não substitui médico, fisioterapeuta ou profissional de Educação Física. Dor aguda, dor torácica, desmaio/tontura importante ou falta de ar incomum exigem interrupção da atividade e avaliação adequada. Nunca é recomendado treinar através da dor.
