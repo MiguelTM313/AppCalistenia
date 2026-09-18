@@ -2,6 +2,7 @@ package com.calistenia.app.ui
 
 import android.annotation.SuppressLint
 import android.content.ActivityNotFoundException
+import android.content.Context
 import android.content.Intent
 import android.graphics.Color
 import android.net.Uri
@@ -53,16 +54,19 @@ import kotlinx.coroutines.delay
                 key(video.youtubeId, attempt) { ExerciseYouTubePlayer(video) }
                 Text("Toque no play para assistir. O YouTube pode exibir anúncios e usar dados de navegação. O áudio pode estar em outro idioma.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 TextButton({ attempt++ }, Modifier.fillMaxWidth()) { Text("Tentar novamente") }
-                OutlinedButton({
-                    try {
-                        context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(video.watchUrl)))
-                    } catch (_: ActivityNotFoundException) {
-                        Toast.makeText(context, "Nenhum aplicativo disponível para abrir o vídeo.", Toast.LENGTH_LONG).show()
-                    }
-                }, Modifier.fillMaxWidth()) { Text("Abrir no YouTube") }
+                OutlinedButton({ openVideoLink(context, Uri.parse(video.watchUrl)) }, Modifier.fillMaxWidth()) { Text("Abrir no YouTube") }
                 Button(close, Modifier.fillMaxWidth()) { Text("Voltar às instruções") }
             }
         }
+    }
+}
+
+private fun openVideoLink(context: Context, uri: Uri) {
+    if (uri.scheme != "https") return
+    try {
+        context.startActivity(Intent(Intent.ACTION_VIEW, uri))
+    } catch (_: ActivityNotFoundException) {
+        Toast.makeText(context, "Nenhum aplicativo disponível para abrir o vídeo.", Toast.LENGTH_LONG).show()
     }
 }
 
@@ -101,7 +105,7 @@ internal fun videoHtml(video: ExerciseVideo): String = """
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     var status by remember { mutableStateOf(VideoStatus.LOADING) }
     val webView = remember(video.youtubeId) {
-        WebView(context).apply {
+        try { WebView(context).apply {
             webChromeClient = WebChromeClient()
             setBackgroundColor(Color.BLACK)
             settings.javaScriptEnabled = true
@@ -110,7 +114,11 @@ internal fun videoHtml(video: ExerciseVideo): String = """
             settings.allowContentAccess = false
             settings.mixedContentMode = WebSettings.MIXED_CONTENT_NEVER_ALLOW
             settings.mediaPlaybackRequiresUserGesture = true
-        }
+        } } catch (_: RuntimeException) { null }
+    }
+    if (webView == null) {
+        Text("O player não está disponível neste aparelho. Abra o vídeo no YouTube ou atualize o Android System WebView.", style = MaterialTheme.typography.bodySmall)
+        return
     }
     DisposableEffect(webView, lifecycle) {
         var disposed = false
@@ -118,8 +126,12 @@ internal fun videoHtml(video: ExerciseVideo): String = """
             webView.post { if (!disposed) status = next }
         }, "VideoStatus")
         webView.webViewClient = object : WebViewClient() {
-            // Player links stay in their frame; top-level navigation is handled by the explicit external button.
-            override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean = request.isForMainFrame
+            // Preserve player click-throughs without navigating the local page with its status bridge.
+            override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
+                if (!request.isForMainFrame) return false
+                if (request.hasGesture()) openVideoLink(context, request.url)
+                return true
+            }
             override fun onReceivedError(view: WebView, request: WebResourceRequest, error: WebResourceError) {
                 if (request.isForMainFrame && !disposed) status = VideoStatus.ERROR
             }

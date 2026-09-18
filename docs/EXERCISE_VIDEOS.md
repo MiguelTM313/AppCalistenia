@@ -13,7 +13,7 @@ O catálogo acompanha o app e associa os 36 IDs existentes a vídeos específico
 
 ## Integração
 
-WebView do Android com IFrame API; HTTPS, sem acesso a arquivos/conteúdo local nem tráfego misto. A ponte JavaScript recebe apenas sinais de prontidão/erro, sem ler registros ou executar ações do app. IDs são validados antes de entrar no HTML. Navegação da página principal é bloqueada; o acesso externo é uma ação explícita.
+WebView do Android com IFrame API; HTTPS, sem acesso a arquivos/conteúdo local nem tráfego misto. A ponte JavaScript recebe apenas sinais de prontidão/erro, sem ler registros ou executar ações do app. IDs são validados antes de entrar no HTML. A página principal não navega para sites externos; links HTTPS do player acionados pelo usuário abrem no aplicativo externo, assim como o botão “Abrir no YouTube”. Se o WebView estiver indisponível, esse botão continua acessível.
 
 O HTML local usa loadDataWithBaseURL com https://com.calistenia.app/ para enviar a identidade do app no Referer/origin, conforme a [documentação oficial do YouTube](https://developers.google.com/youtube/terms/required-minimum-functionality#embedded-youtube-player-and-identity). O player tem 220dp de altura, controles e branding originais, sem autoplay. Nenhuma dependência de player ou serviço pago foi adicionada.
 
