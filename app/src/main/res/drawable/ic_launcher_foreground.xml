@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- A roof and an athlete: movement at home. Keep the mark inside the 66dp safe zone. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:fillColor="@android:color/transparent"
+        android:strokeColor="@color/ic_launcher_foreground"
+        android:strokeWidth="5"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M31,46 L54,28 L77,46" />
+    <path
+        android:fillColor="@color/ic_launcher_foreground"
+        android:pathData="M54,43 A5,5 0,1 1,54,53 A5,5 0,1 1,54,43" />
+    <path
+        android:fillColor="@android:color/transparent"
+        android:strokeColor="@color/ic_launcher_foreground"
+        android:strokeWidth="6"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M38,53 L47,61 L61,61 L70,53 M54,61 L54,68 M44,79 L54,68 L64,79" />
+</vector>
