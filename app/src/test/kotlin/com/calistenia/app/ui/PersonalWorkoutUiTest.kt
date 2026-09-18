@@ -89,7 +89,29 @@ class PersonalWorkoutUiTest {
         compose.onNode(hasText("Prancha lateral") and !hasSetTextAction()).assertExists()
         compose.onNodeWithText("Como fazer +").performClick()
         compose.onNodeWithText("Fechar detalhes −").assertExists()
+        compose.onNodeWithText("Ver vídeo").performScrollTo().performClick()
+        compose.onNodeWithText("Demonstração • Rehab Hero").assertExists()
+        compose.onNodeWithText("Voltar às instruções").performScrollTo().performClick()
+        compose.onNodeWithText("Fechar detalhes −").assertExists()
         screenshot("04-library")
+    }
+
+    @Test fun `watching instructions does not submit a set and retry stays reachable with large text`() {
+        var saves = 0
+        compose.setContent {
+            CompositionLocalProvider(LocalDensity provides Density(LocalDensity.current.density, 1.5f)) {
+                CalisthenicsTheme { WorkoutPlayerScreen(fixture(), { saves++ }, {}, {}, {}) }
+            }
+        }
+        compose.onNodeWithText("Como fazer este exercício").performScrollTo().performClick()
+        compose.onNodeWithText("Ver vídeo").performScrollTo().performClick()
+        compose.onNodeWithText("Demonstração • HASfit").assertExists()
+        compose.onNodeWithText("Tentar novamente").performScrollTo().performClick()
+        compose.onNodeWithText("Abrir no YouTube").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText("Voltar às instruções").performScrollTo().performClick()
+        assertEquals(0, saves)
+        compose.onNodeWithText("Salvar série").performScrollTo().performClick()
+        assertEquals(1, saves)
     }
 
     @Test fun `home highlights saved workout and prevents competing quick workout`() {

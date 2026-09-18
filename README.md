@@ -1,6 +1,12 @@
 # Calistenia em Casa
 
-Versão **1.0** (`versionCode = 2`), para uso pessoal. Após instalar, o app aparece como **Calistenia em Casa**, com ícone verde de um atleta sob um telhado. O ícone é adaptativo e oferece camada monocromática para os temas do Android 13 ou superior.
+Versão **1.1** (`versionCode = 3`), para uso pessoal. Após instalar, o app aparece como **Calistenia em Casa**, com ícone verde de um atleta sob um telhado. O ícone é adaptativo e oferece camada monocromática para os temas do Android 13 ou superior.
+
+### Novidade da versão 1.1
+
+Cada seção “Como fazer”, na biblioteca e no treino, oferece uma demonstração em vídeo do exercício. São 36 vídeos curtos, com autoria identificada, carregados somente ao tocar em “Ver vídeo”. É necessário acesso à internet; os vídeos são reproduzidos pelo YouTube e podem conter anúncios e áudio em outro idioma. Há nova tentativa e opção de abrir o vídeo original se o player não carregar. Ao fechar ou deixar o app em segundo plano, a reprodução para.
+
+O catálogo de vídeos usa os IDs existentes dos exercícios e funciona também em instalações com planos já salvos, sem migrar ou recriar o banco. Instruções, treino e histórico continuam locais e funcionam sem internet. Consulte [Vídeos e validação](docs/EXERCISE_VIDEOS.md).
 
 Para atualizar preservando os treinos, compile usando a mesma chave da instalação anterior. APKs debug gerados em máquinas/execuções diferentes do CI podem ter assinaturas diferentes; nesse caso o Android recusa a atualização. **Não desinstale o app para contornar esse erro se já houver registros que queira manter.** O pacote continua `com.calistenia.app` e o banco permanece no schema v3.
 
@@ -64,7 +70,7 @@ O player mostra a série atual, alvo, contador de repetições/segundos, cronôm
 
 O histórico permite abrir as séries, técnica e sintomas. A biblioteca tem busca, filtros e detalhes textuais. Falhas de operações aparecem em todas as telas; a inicialização oferece nova tentativa. O CI executa também testes Compose/Robolectric em tela de 360dp e fonte ampliada, e disponibiliza o APK debug e relatórios como artefatos por 7 dias. Capturas de UI ficam em `app/build/ui-screenshots` durante os testes. A instalação em aparelho real continua sendo uma verificação complementar.
 
-Os dados permanecem locais; desinstalar ou limpar os dados pode apagar o histórico. Esta versão não inclui anúncios, serviços pagos ou publicação em loja.
+Os registros de treino permanecem locais; desinstalar ou limpar os dados pode apagar o histórico. Os vídeos carregam conteúdo externo do YouTube, sujeito aos anúncios e à política de privacidade do serviço. Esta versão não inclui monetização própria, serviços pagos ou publicação em loja.
 
 Este incremento prioriza a fundação e não declara o produto completo. Próximos blocos:
 
@@ -72,8 +78,8 @@ Este incremento prioriza a fundação e não declara o produto completo. Próxim
 2. substituir a autoestimativa por protocolos guiados e reavaliações;
 3. oferecer substituição avançada e edição visual de séries antigas (encerramento antecipado já está disponível);
 4. persistir versões imutáveis de replanejamento e expor `ScheduleRebalancer` com confirmação na navegação semanal;
-6. edição de perfil/configurações e demonstrações visuais de exercícios (biblioteca, resumo e histórico detalhado já disponíveis);
+6. edição de perfil/configurações (vídeos, biblioteca, resumo e histórico detalhado já disponíveis);
 7. milestones, reavaliações periódicas, exportação/importação e acessibilidade/testes instrumentados;
 8. integração opcional futura com Health Connect e, separadamente, análise de movimento por câmera.
 
-WorkManager, backend, autenticação, internet, Health Connect e câmera não fazem parte desta fase. O manifesto não solicita permissão de internet.
+WorkManager, backend, autenticação, Health Connect e câmera não fazem parte desta fase. A permissão de internet é usada para os vídeos; o app não envia perfil ou histórico ao player.
