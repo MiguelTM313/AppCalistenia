@@ -44,6 +44,8 @@ interface AppDao {
     @Query("UPDATE planned_sessions SET status = 'COMPLETED' WHERE id = :id") suspend fun completePlannedSession(id: String)
     @Query("SELECT * FROM workout_sessions WHERE status = 'COMPLETED' ORDER BY completedAt DESC") fun observeHistory(): Flow<List<WorkoutSessionEntity>>
     @Transaction @Query("SELECT * FROM workout_sessions WHERE status='COMPLETED' ORDER BY completedAt DESC") suspend fun completedWorkouts(): List<WorkoutWithExercises>
+    @Transaction @Query("SELECT * FROM workout_sessions WHERE status='COMPLETED' ORDER BY completedAt DESC") fun observeCompletedWorkouts(): Flow<List<WorkoutWithExercises>>
+    @Query("SELECT * FROM workout_sessions WHERE status='IN_PROGRESS' LIMIT 1") suspend fun activeWorkout(): WorkoutSessionEntity?
     @Query("SELECT COUNT(*) FROM functional_levels") suspend fun levelCount(): Int
     @Query("SELECT COUNT(*) FROM planned_sessions") suspend fun planSessionCount(): Int
 }

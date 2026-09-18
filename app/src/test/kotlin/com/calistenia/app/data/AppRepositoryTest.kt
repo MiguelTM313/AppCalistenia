@@ -161,6 +161,39 @@ class AppRepositoryTest {
         return TrainingPlan("plan-week", LocalDate.of(2026, 9, 14), listOf(PlannedSession("session", LocalDate.of(2026, 9, 17), "Treino", listOf(PlannedExercise(exercise, sets, 8, 12, 60, 0, "teste")), 15)), emptyList())
     }
 
+    @Test fun `early finish keeps completed sets and marks only remaining positions skipped`() = runBlocking {
+        repository.savePlan(plan(sets = 3))
+        repository.startSession("session", Readiness(3, 3, 1, 3), 1000L)
+        repository.saveSet("session", SetInput("push", 0, 8, 2, Discomfort.SHARP_PAIN), 2000L)
+        repository.finishSession("session", 65000L)
+        val stored = db.dao().completedWorkouts().single()
+        assertEquals("COMPLETED", stored.workout.status)
+        assertEquals(1, stored.exercises.single().sets.count { it.status == "COMPLETED" })
+        assertEquals(2, stored.exercises.single().sets.count { it.status == "SKIPPED" })
+        assertEquals("PARTIAL", stored.exercises.single().exerciseSession.completionStatus)
+        assertEquals(Discomfort.SHARP_PAIN, repository.workoutHistory().sessions.single().exercises.single().sets.single().discomfort)
+    }
+
+    @Test fun `finishing all performed sets preserves completed exercise status`() = runBlocking {
+        repository.savePlan(plan())
+        repository.startSession("session", Readiness(3, 3, 1, 3))
+        repository.saveSet("session", SetInput("push", 0, 10, 2))
+        repository.finishSession("session")
+        assertEquals("COMPLETED", db.dao().completedWorkouts().single().exercises.single().exerciseSession.completionStatus)
+    }
+
+    @Test fun `starting another session cannot orphan the active workout`() = runBlocking {
+        repository.savePlan(plan())
+        val second = plan().copy(id = "plan-second", sessions = listOf(plan().sessions.single().copy(id = "second")))
+        repository.savePlan(second)
+        val original = repository.startSession("session", Readiness(3, 3, 1, 3), 1000L)
+        val result = runCatching { repository.startSession("second", Readiness(3, 3, 1, 3)) }
+        assertTrue(result.isFailure)
+        assertEquals(original, db.dao().activeWorkout()!!.id)
+        assertEquals("PLANNED", db.dao().plannedSession("second")!!.session.status)
+        assertEquals(original, repository.startSession("session", Readiness(1, 1, 5, 1)))
+    }
+
     private fun exerciseEntity() = ExerciseEntity("push", "Flexão", "", "Controle", "PUSH", "peito", 3, "NONE", 3, null, null, "REPETITIONS", 8, 12, null, 60, false, "", "", "", null, true)
     private fun profileEntity() = UserProfileEntity(1, 30, null, 175, 75.0, "STRENGTH", "", "BEGINNER", "BEGINNER", 1, "THURSDAY", 20, "Casa", "NONE", "", "", true)
 }

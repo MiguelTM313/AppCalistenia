@@ -17,6 +17,7 @@ class AppRepository(private val db: AppDatabase) {
     fun planSessions(): Flow<List<SessionWithExercises>> = dao.observePlanSessions()
     fun exercises(): Flow<List<ExerciseEntity>> = dao.observeExercises()
     fun history(): Flow<List<WorkoutSessionEntity>> = dao.observeHistory()
+    fun historyDetails(): Flow<List<WorkoutWithExercises>> = dao.observeCompletedWorkouts()
     fun inProgress(): Flow<WorkoutSessionEntity?> = dao.observeInProgressWorkout()
     fun player(sessionId: String): Flow<WorkoutPlayerState?> = dao.observeWorkout(sessionId).map { workout ->
         workout ?: return@map null
@@ -102,6 +103,7 @@ class AppRepository(private val db: AppDatabase) {
 
     suspend fun startSession(sessionId: String, readiness: Readiness, now: Long = System.currentTimeMillis()): String = db.withTransaction {
         dao.inProgressWorkout(sessionId)?.id ?: run {
+            check(dao.activeWorkout() == null) { "Retome ou finalize o treino em andamento antes de iniciar outro." }
             val session = dao.plannedSession(sessionId) ?: error("Sessão não encontrada")
             check(session.session.status == SessionStatus.PLANNED.name) { "Somente sessões planejadas podem ser iniciadas" }
             adaptForReadiness(session, readiness)
@@ -149,7 +151,7 @@ class AppRepository(private val db: AppDatabase) {
             if (existing?.status == "COMPLETED") performedCount++
             else dao.addSetLog(SetLogEntity(existing?.id ?: 0, execution.id, setIndex, row.planned.targetMax, null, null, null, Discomfort.NONE.name, true, "SKIPPED", now))
         }
-        dao.updateExerciseStatus(execution.id, if (performedCount == 0) "FULLY_SKIPPED" else "PARTIAL", performedCount == 0)
+        dao.updateExerciseStatus(execution.id, when (performedCount) { 0 -> "FULLY_SKIPPED"; row.planned.sets -> "COMPLETED"; else -> "PARTIAL" }, performedCount == 0)
     }
 
     suspend fun completeSession(sessionId: String, now: Long = System.currentTimeMillis()) = db.withTransaction {
@@ -157,6 +159,13 @@ class AppRepository(private val db: AppDatabase) {
         val minutes = ((now - workout.startedAt).coerceAtLeast(0) / 60_000L).toInt()
         dao.completeWorkout(workout.id, now, minutes)
         dao.completePlannedSession(sessionId)
+    }
+
+    // The UI may finish early; remaining positions are explicit skips, never fabricated work.
+    suspend fun finishSession(sessionId: String, now: Long = System.currentTimeMillis()) = db.withTransaction {
+        val session = dao.plannedSession(sessionId) ?: error("Sessão não encontrada")
+        session.exerciseRows.forEach { skipExerciseRemainder(sessionId, it.exercise.id, now) }
+        completeSession(sessionId, now)
     }
 
     private suspend fun adaptForReadiness(row: SessionWithExercises, readiness: Readiness) {

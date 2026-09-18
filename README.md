@@ -52,13 +52,23 @@ O CI instala JDK 17, Android SDK e Gradle 8.14.3. O Wrapper continua ausente por
 
 ## Limitações e roadmap explícito
 
+### Interface para treino pessoal
+
+A navegação principal separa Hoje, Plano, Histórico e Exercícios. O cadastro tem três etapas com validação numérica, escolha dos dias da semana e equipamentos; os rascunhos de tela usam estado restaurável. A avaliação inicial continua sendo uma autoestimativa, agora com referências do catálogo.
+
+O player mostra a série atual, alvo, contador de repetições/segundos, cronômetro opcional para séries por tempo, RIR explicado e desconfortos em português. O descanso deriva do horário persistido da última série e não reinicia ao retomar. Encerrar antecipadamente preserva as séries realizadas e marca o restante como não realizado, com confirmação. Não é permitido iniciar uma segunda sessão enquanto outra estiver em andamento.
+
+O histórico permite abrir as séries, técnica e sintomas. A biblioteca tem busca, filtros e detalhes textuais. Falhas de operações aparecem em todas as telas; a inicialização oferece nova tentativa. O CI executa também testes Compose/Robolectric em tela de 360dp e fonte ampliada, e disponibiliza o APK debug e relatórios como artefatos por 7 dias. Capturas de UI ficam em `app/build/ui-screenshots` durante os testes. A instalação em aparelho real continua sendo uma verificação complementar.
+
+Os dados permanecem locais; desinstalar ou limpar os dados pode apagar o histórico. Esta versão não inclui anúncios, serviços pagos ou publicação em loja.
+
 Este incremento prioriza a fundação e não declara o produto completo. Próximos blocos:
 
-1. ampliar onboarding para sexo opcional, objetivos secundários, preferências, limitações, local, frequência e seleção completa de dias/equipamentos;
-2. substituir os sliders de autoavaliação por protocolos guiados, escolha automática de testes e bloqueios detalhados da triagem;
-3. oferecer substituição avançada e controles completos de cancelamento da sessão (a confirmação de uma série já pode sobrescrever idempotentemente o mesmo índice);
+1. ampliar perfil para sexo opcional, objetivos secundários, preferências e limitações (dias, frequência e equipamentos já selecionáveis);
+2. substituir a autoestimativa por protocolos guiados e reavaliações;
+3. oferecer substituição avançada e edição visual de séries antigas (encerramento antecipado já está disponível);
 4. persistir versões imutáveis de replanejamento e expor `ScheduleRebalancer` com confirmação na navegação semanal;
-6. telas dedicadas de detalhe de exercício, perfil, configurações, resultados de avaliação e dashboard completo;
+6. edição de perfil/configurações e demonstrações visuais de exercícios (biblioteca, resumo e histórico detalhado já disponíveis);
 7. milestones, reavaliações periódicas, exportação/importação e acessibilidade/testes instrumentados;
 8. integração opcional futura com Health Connect e, separadamente, análise de movimento por câmera.
 
