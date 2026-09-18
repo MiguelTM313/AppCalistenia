@@ -157,6 +157,7 @@ import java.time.*
 }
 
 @Composable internal fun ExerciseInstructions(exercise: ExerciseEntity) {
+    ExerciseVideoCard(exercise)
     Text(exercise.instructions)
     exercise.techniqueCues.split('|').filter { it.isNotBlank() }.forEach { Text("• $it", style = MaterialTheme.typography.bodyMedium) }
     if (exercise.commonMistakes.isNotBlank()) Text("Evite: ${exercise.commonMistakes.replace('|', ';')}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)

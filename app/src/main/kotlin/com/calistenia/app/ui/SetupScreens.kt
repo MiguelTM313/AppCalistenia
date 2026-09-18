@@ -25,7 +25,7 @@ import java.util.Locale
         Notice("Não treine através da dor. O aplicativo não faz diagnósticos nem substitui avaliação profissional.")
         PrimaryAction("Não tenho esses sinais", onClick = next)
         OutlinedButton({ guidance = true }, Modifier.fillMaxWidth().heightIn(min = 52.dp)) { Text("Preciso de orientação antes") }
-        Text("Sem conta. Sem anúncios. Seus registros ficam neste aparelho.", color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
+        Text("Sem conta. Seus registros ficam neste aparelho.", color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
     }
     if (guidance) AlertDialog(onDismissRequest = { guidance = false }, title = { Text("Cuide de você primeiro") },
         text = { Text("Interrompa a atividade e procure avaliação profissional antes de iniciar o treino se apresentar esses sinais. Você pode fechar o app e voltar depois.") },
